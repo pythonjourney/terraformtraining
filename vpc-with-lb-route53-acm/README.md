@@ -1,5 +1,9 @@
 Demonstrating AWS Route 53, VPC, Load Balancer, and SSL Integration with Terraform
 
+
+![image](https://github.com/user-attachments/assets/36394360-7b1c-4a79-a01e-0cf9716635ba)
+
+
 This guide provides a detailed overview of AWS services like Route 53, VPC, Load Balancer, and Amazon Certificate Manager (ACM) for SSL/TLS. We'll also walk through creating the infrastructure depicted in the architecture diagram using Terraform. This article is tailored for students and professionals looking to understand these services and their integration.
 
 Overview of the Architecture
