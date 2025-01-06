@@ -58,6 +58,33 @@ resource "aws_subnet" "tftraining_public_subnet2" {
 
 }
 
+#creating private subnet1
+
+resource "aws_subnet" "tftraining_private_subnet1" {
+  vpc_id = aws_vpc.tftrainingvpc.id
+  cidr_block = var.private_subnet1_cidr_block
+  availability_zone = data.aws_availability_zones.available.names[0]
+   map_public_ip_on_launch = false
+  
+}
+
+resource "aws_subnet" "tftraining_private_subnet2" {
+  vpc_id = aws_vpc.tftrainingvpc.id
+  cidr_block = var.private_subnet2_cidr_block
+  availability_zone = data.aws_availability_zones.available.names[1]
+   map_public_ip_on_launch = false
+  
+}
+#creating DB Subnet group for  RDS
+resource "aws_db_subnet_group" "tftraining_dbsubnet_group" {
+  name       = "main"
+  subnet_ids = [aws_subnet.tftraining_private_subnet1.id, aws_subnet.tftraining_private_subnet2.id]
+
+  tags = {
+    Name = "${var.dbsubnet_groupname}"
+  }
+}
+
 #creating and attaching internet gateway to vpc
 
 resource "aws_internet_gateway" "tftraining_igw" {
@@ -204,6 +231,50 @@ resource "aws_security_group" "tftraining_ec2_sg" {
   }
 }
 
+#Creating security group for RDS
+
+resource "aws_security_group" "tftraining_rds_sg" {
+  name        = "tftraining_rds_sg"
+  description = "Allow 3306 inbound traffic for tftraining_ec2_sg and all outbound traffic"
+  vpc_id      = aws_vpc.tftrainingvpc.id
+
+  ingress {
+
+
+
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "TCP"
+    security_groups = [aws_security_group.tftraining_ec2_sg.id]
+
+  }
+
+
+  
+
+
+  egress {
+
+
+
+    from_port   = "0"
+    to_port     = "0"
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+
+  }
+
+
+
+
+  tags = {
+    Name = "${var.rds_sg_name}"
+  }
+}
+
+
+#creating EC2 instance
+
 resource "aws_instance" "tftraining_ec2_server" {
 
   instance_type          = var.instance_type
@@ -211,6 +282,7 @@ resource "aws_instance" "tftraining_ec2_server" {
   vpc_security_group_ids = [aws_security_group.tftraining_ec2_sg.id]
   subnet_id = aws_subnet.tftraining_public_subnet1.id
   key_name = "tfdec30"
+
 
   connection {
     type        = "ssh"
@@ -224,9 +296,22 @@ resource "aws_instance" "tftraining_ec2_server" {
 
     inline = [
 
-      "sudo apt update",
-      "sudo apt install nginx -y"
+      
+           "sleep 30",
+           "sudo apt update -y",
+           "sudo apt install docker.io -y",
+           "sudo systemctl start docker",
+           "sudo systemctl enable docker",
+           "sudo usermod -aG docker ubuntu",
+           "sudo apt-get install -y mysql-client",
+  
+           "sudo docker pull wordpress -y",
+     "sudo docker run -d --name wordpress -e WORDPRESS_DB_HOST=${aws_db_instance.tftraining_rds_instance.endpoint}:3306 -e WORDPRESS_DB_USER=${var.dbusername} -e WORDPRESS_DB_PASSWORD=${var.dbpassword} -e WORDPRESS_DB_NAME=${var.dbname} -p 80:80 wordpress:latest"
+
     ]
+             
+
+              
 
   }
 
@@ -235,8 +320,26 @@ resource "aws_instance" "tftraining_ec2_server" {
 
     Name = "${var.ec2_name}"
   }
+
+   depends_on = [aws_db_instance.tftraining_rds_instance]
 }
 
+
+
+resource "aws_db_instance" "tftraining_rds_instance" {
+    identifier            = "tftrainingdb"
+  allocated_storage    = 20
+  db_name              = var.dbname
+  engine               = "mysql"
+  engine_version       = "8.0"
+  instance_class       = "db.t3.micro"
+  username             = var.dbusername
+  password             = var.dbpassword
+  parameter_group_name = "default.mysql8.0"
+  db_subnet_group_name = aws_db_subnet_group.tftraining_dbsubnet_group.name 
+  vpc_security_group_ids = [ aws_security_group.tftraining_rds_sg.id ]
+  skip_final_snapshot  = true
+}
 
 # creating target group attachment
 resource "aws_lb_target_group_attachment" "tftraining_tg_attachment" {

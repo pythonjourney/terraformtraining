@@ -33,6 +33,32 @@ variable "subnet2_cidr_block" {
 
 }
 
+variable "private_subnet1_cidr_block" {
+
+  description = "cidr for private subnet1"
+  type        = string
+
+  default = "10.0.6.0/24"
+}
+
+
+variable "private_subnet2_cidr_block" {
+
+  description = "cidr for private subnet2"
+  type        = string
+
+  default = "10.0.8.0/24"
+}
+  
+  variable "dbsubnet_groupname"{
+
+      description = "name for db subnet group"
+      type        = string
+
+      default = "tftraining_dbsubnet_group"
+  }
+  
+
 variable "igw_name" {
 
 
@@ -65,9 +91,21 @@ variable "alb_sg_name" {
 
 variable "ec2_sg_name" {
 
-  description = "name for alb"
+  description = "name for EC2 SG"
   type        = string
   default     = "tftraining_ec2_sg"
+
+}
+
+
+
+
+
+variable "rds_sg_name" {
+
+  description = "name for RDS SG"
+  type        = string
+  default     = "tftraining_rds_sg"
 
 }
 variable "environment" {
@@ -105,4 +143,39 @@ variable "ec2_name" {
   default = "tftraining_ec2"
 
 
+}
+
+
+
+
+variable "dbname" {
+
+  description = " choose  db name"
+  type        = string
+
+  default = "tftraining_db"
+
+  
+}
+
+variable "dbusername" {
+
+  description = " choose  db user name"
+  type        = string
+
+  default = "tftraining_user"
+
+  
+}
+
+
+
+
+variable "dbpassword" {
+
+  description = " choose  db password "
+  type        = string
+
+  
+  
 }
